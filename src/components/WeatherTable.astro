@@ -1,0 +1,75 @@
+---
+import type { Location } from '../lib/locations';
+import { getPhotoSunTimes, upcomingDays, formatDate } from '../lib/sunCalc';
+import { fetchHourlyWeather, summarizeDayWeather } from '../lib/weather';
+
+interface Props {
+  location: Location;
+  days?: number;
+}
+
+const { location, days = 5 } = Astro.props;
+
+let rows: { date: Date; summary: ReturnType<typeof summarizeDayWeather> }[] = [];
+let fetchFailed = false;
+
+try {
+  const hourly = await fetchHourlyWeather(location);
+  rows = upcomingDays(days).map((date) => {
+    const sun = getPhotoSunTimes(date, location);
+    const morningWindowEnd = new Date(sun.effectiveSunrise.getTime() + 90 * 60 * 1000);
+    const summary = summarizeDayWeather(
+      hourly,
+      sun.eveningGoldenHourStart,
+      sun.eveningBlueHourEnd,
+      sun.effectiveSunrise,
+      morningWindowEnd,
+      sun.effectiveSunrise
+    );
+    return { date, summary };
+  });
+} catch (err) {
+  fetchFailed = true;
+  console.error(`WeatherTable: forecast fetch failed for ${location.slug}`, err);
+}
+---
+
+{
+  fetchFailed ? (
+    <p class="note">Vremenska napoved trenutno ni na voljo (težava s povezavo do Open-Meteo). Poskusi znova ob naslednji objavi strani.</p>
+  ) : (
+    <div style="overflow-x: auto;">
+      <table class="light-table">
+        <caption>Napoved Open-Meteo za okna zlate/modre ure in jutranje mirno obdobje, izračunana ob zadnji objavi strani.</caption>
+        <thead>
+          <tr>
+            <th>Dan</th>
+            <th>Oblačnost zvečer</th>
+            <th>Dež zvečer</th>
+            <th>Veter zvečer</th>
+            <th>Veter zjutraj</th>
+            <th>Rosa (Δ°C)</th>
+            <th>Dež zadnjih 12h</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ date, summary }) => (
+            <tr>
+              <td>{formatDate(date)}</td>
+              <td>{summary.eveningCloudCoverPct ?? '—'}%</td>
+              <td>{summary.eveningPrecipProbPct ?? '—'}%</td>
+              <td>{summary.eveningWindKmh ?? '—'} km/h</td>
+              <td>{summary.morningWindKmh ?? '—'} km/h</td>
+              <td>{summary.dewSpreadC ?? '—'}°C</td>
+              <td>{summary.precipPast12hMm ?? '—'} mm</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+<p style="font-size: 0.85rem; color: var(--color-text-muted);">
+  "Rosa (Δ°C)" je razlika med temperaturo in rosiščem ob sončnem vzhodu — manjša razlika pomeni več
+  rose za makro fotografijo. "Dež zadnjih 12h" je vsota padavin do sončnega vzhoda.
+</p>

@@ -1,9 +1,22 @@
 import SunCalc from 'suncalc';
 import type { Location } from './locations';
+import horizonProfiles from '../data/horizon-profiles.json';
 
 const FLAT_HORIZON_DEG = -0.833;
 const GOLDEN_HOUR_ALT_DEG = 6;
 const CIVIL_TWILIGHT_ALT_DEG = -6;
+
+interface HorizonPoint {
+  azimuth: number;
+  deg: number;
+}
+
+interface HorizonProfile {
+  elevation: number;
+  profile: HorizonPoint[];
+}
+
+const profiles = horizonProfiles as Record<string, HorizonProfile>;
 
 export interface PhotoSunTimes {
   date: Date;
@@ -27,6 +40,25 @@ export interface PhotoSunTimes {
 function altitudeDeg(date: Date, lat: number, lng: number): number {
   const pos = SunCalc.getPosition(date, lat, lng);
   return (pos.altitude * 180) / Math.PI;
+}
+
+/** Sun azimuth as a compass bearing (0=N, 90=E, 180=S, 270=W). SunCalc's own
+ * azimuth is measured from south, so we rotate it by 180deg. */
+function compassAzimuthDeg(date: Date, lat: number, lng: number): number {
+  const pos = SunCalc.getPosition(date, lat, lng);
+  const suncalcDeg = (pos.azimuth * 180) / Math.PI;
+  return (suncalcDeg + 180 + 360) % 360;
+}
+
+/** Linearly interpolates the DEM horizon-elevation angle at a compass bearing
+ * from a profile sampled at even azimuth steps. */
+function interpolateHorizonDeg(profile: HorizonPoint[], bearingDeg: number): number {
+  const step = 360 / profile.length;
+  const idx = ((bearingDeg % 360) + 360) % 360 / step;
+  const i0 = Math.floor(idx) % profile.length;
+  const i1 = (i0 + 1) % profile.length;
+  const frac = idx - Math.floor(idx);
+  return profile[i0].deg + frac * (profile[i1].deg - profile[i0].deg);
 }
 
 /** Finds the time the sun's altitude crosses `targetDeg`, searching the
@@ -74,21 +106,49 @@ function findAltitudeCrossing(
 }
 
 /**
+ * Finds when the sun disappears behind (morning: rises above) the real DEM
+ * skyline rather than the flat astronomical horizon. The horizon angle
+ * depends on the sun's azimuth, which itself shifts as the crossing time
+ * shifts, so this iterates a few times to converge (azimuth moves slowly
+ * near sunrise/sunset, so 3 passes settle to well under a minute).
+ */
+function findTerrainCrossing(
+  solarNoon: Date,
+  lat: number,
+  lng: number,
+  profile: HorizonPoint[] | null,
+  branch: 'morning' | 'evening'
+): Date {
+  let time = findAltitudeCrossing(solarNoon, lat, lng, FLAT_HORIZON_DEG, branch);
+  if (!profile) return time;
+
+  for (let i = 0; i < 3; i++) {
+    const bearing = compassAzimuthDeg(time, lat, lng);
+    const horizonDeg = Math.max(interpolateHorizonDeg(profile, bearing), FLAT_HORIZON_DEG);
+    const next = findAltitudeCrossing(solarNoon, lat, lng, horizonDeg, branch);
+    if (Math.abs(next.getTime() - time.getTime()) < 30_000) {
+      time = next;
+      break;
+    }
+    time = next;
+  }
+  return time;
+}
+
+/**
  * Computes golden/blue hour windows for a given day and location, adjusted
- * for the location's horizon elevation (mountain ridges shorten direct
- * light in a valley well before the flat-horizon/astronomical sunset).
- * Horizon corrections are estimates, not DEM-derived — see location notes.
+ * for the location's real DEM-derived horizon (mountain ridges shorten
+ * direct light in a valley well before the flat-horizon/astronomical
+ * sunset — see scripts/fetch-horizon-profiles.mjs).
  */
 export function getPhotoSunTimes(date: Date, location: Location): PhotoSunTimes {
-  const { lat, lon, morningHorizonDeg, eveningHorizonDeg } = location;
+  const { lat, lon } = location;
   const times = SunCalc.getTimes(date, lat, lon);
   const solarNoon = times.solarNoon;
+  const profile = profiles[location.slug]?.profile ?? null;
 
-  const morningTarget = Math.max(morningHorizonDeg, FLAT_HORIZON_DEG);
-  const eveningTarget = Math.max(eveningHorizonDeg, FLAT_HORIZON_DEG);
-
-  const effectiveSunrise = findAltitudeCrossing(solarNoon, lat, lon, morningTarget, 'morning');
-  const effectiveSunset = findAltitudeCrossing(solarNoon, lat, lon, eveningTarget, 'evening');
+  const effectiveSunrise = findTerrainCrossing(solarNoon, lat, lon, profile, 'morning');
+  const effectiveSunset = findTerrainCrossing(solarNoon, lat, lon, profile, 'evening');
 
   const morningGoldenHourEndAstro = findAltitudeCrossing(solarNoon, lat, lon, GOLDEN_HOUR_ALT_DEG, 'morning');
   const eveningGoldenHourStartAstro = findAltitudeCrossing(solarNoon, lat, lon, GOLDEN_HOUR_ALT_DEG, 'evening');

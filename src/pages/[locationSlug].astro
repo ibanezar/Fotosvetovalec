@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SunTimesTable from '../components/SunTimesTable.astro';
+import WeatherTable from '../components/WeatherTable.astro';
 import { locations } from '../lib/locations';
 import { photoTypes } from '../lib/photoTypes';
 import { withBase } from '../lib/url';
@@ -27,8 +28,18 @@ const description = `Zlata ura, modra ura in sončni vzhod/zahod za ${location.n
   <h2>Sončni čas naslednjih dni</h2>
   <SunTimesTable location={location} />
 
+  <h2>Vremenska napoved</h2>
+  <WeatherTable location={location} />
+
   <h2>Korekcija za relief doline</h2>
   <p>{location.orographyNote}</p>
+  <div class="note">
+    <strong>Metodologija:</strong> Za vsako lokacijo iz višinskih podatkov Open-Meteo (Copernicus DEM,
+    ločljivost ~90 m) izračunamo profil obzorja v 36 smereh (vsakih 10°) do 16 km daleč, nato pa za
+    vsak dan poiščemo, kdaj sonce dejansko prečka ta profil — ne le ravninski horizont. Ker je
+    ločljivost vzorčenja omejena (10° koraki, do 16 km), gre za dobro oceno, ne za centimetrsko
+    natančnost; oster, bližnji rob grebena lahko izračun rahlo podceni ali preceni.
+  </div>
 
   <h2>Za katero vrsto fotografije je {location.name} primeren?</h2>
   <div class="card-grid">
