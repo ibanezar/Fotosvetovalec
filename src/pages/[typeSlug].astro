@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { photoTypes } from '../lib/photoTypes';
+import { locations } from '../lib/locations';
+import { withBase } from '../lib/url';
+
+export function getStaticPaths() {
+  return photoTypes.map((t) => ({
+    params: { typeSlug: t.slug },
+    props: { photoType: t },
+  }));
+}
+
+const { photoType } = Astro.props;
+
+const descriptions: Record<string, string> = {
+  poroke:
+    'Vreme za poroko in napoved vremena za poroko: zlata ura, verjetnost dežja in veter za poročne fotografije v naravni svetlobi. Lokacije po Zgornji Savinjski dolini.',
+  pokrajina:
+    'Vreme za pokrajinsko fotografijo: jasnost neba, vidljivost gora in inverzija. Kdaj je zlata ura za pokrajinsko fotografiranje v Zgornji Savinjski dolini.',
+  makro:
+    'Vreme za makro fotografijo: brezvetrna jutra, rosa in suhi pogoji za fotografiranje cvetja in žuželk od blizu.',
+};
+
+const title = photoType.name;
+const description = descriptions[photoType.slug] ?? photoType.intro;
+---
+
+<BaseLayout title={title} description={description}>
+  <p class="breadcrumbs"><a href={withBase('/')}>Fotovreme</a> / {photoType.shortName}</p>
+  <span class="badge">{photoType.shortName}</span>
+  <h1>{photoType.name}</h1>
+  <p class="lede">{photoType.intro}</p>
+
+  <h2>Na kaj je treba biti pozoren</h2>
+  {
+    photoType.factors.map((f) => (
+      <>
+        <h3>{f.title}</h3>
+        <p>{f.description}</p>
+      </>
+    ))
+  }
+
+  <div class="note">
+    <strong>Najboljše okno:</strong> {photoType.bestWindow}
+  </div>
+
+  <h2>Preveri vreme po lokaciji</h2>
+  <p>
+    Zlata ura in korekcija za relief doline se med lokacijami razlikujeta — izberi svojo lokacijo za
+    natančnejši izračun.
+  </p>
+  <div class="card-grid">
+    {
+      locations.map((loc) => (
+        <div class="card">
+          <h3>{loc.name}</h3>
+          <p>{loc.region}</p>
+          <a class="card-link" href={withBase(`/${loc.slug}`)}>
+            Vreme in zlata ura: {loc.name} →
+          </a>
+        </div>
+      ))
+    }
+  </div>
+
+  <p style="margin-top: 2rem;">
+    <a href={withBase('/')}>← Nazaj na Fotovreme</a>
+  </p>
+</BaseLayout>
