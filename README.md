@@ -44,7 +44,7 @@ zlate/modre ure. Napoved je torej sveža toliko, kolikor je svež zadnji build s
 
 ```bash
 npm install
-npm run dev       # http://localhost:4321/fotosvetovalec/
+npm run dev       # http://localhost:4321/Fotosvetovalec/
 npm run build      # statični izpis v dist/
 npm run preview
 ```
@@ -52,6 +52,6 @@ npm run preview
 ## Deploy
 
 `.github/workflows/deploy.yml` zgradi in objavi stran na GitHub Pages
-(`https://ibanezar.github.io/fotosvetovalec/`) ob pushu na `main`, ročno (`workflow_dispatch`), in
+(`https://ibanezar.github.io/Fotosvetovalec/`) ob pushu na `main`, ročno (`workflow_dispatch`), in
 vsakih 6 ur (`schedule`), da vremenska napoved ne zastara. Base pot je nastavljena v
 `astro.config.mjs` — če stran kdaj seli na svojo domeno, odstrani `base` in po potrebi `site`.
