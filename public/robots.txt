@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://ibanezar.github.io/Fotosvetovalec/sitemap-index.xml
