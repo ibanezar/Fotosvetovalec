@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SunTimesTable from '../components/SunTimesTable.astro';
+import WeatherTable from '../components/WeatherTable.astro';
+import { locations } from '../lib/locations';
+import { photoTypes } from '../lib/photoTypes';
+import { withBase } from '../lib/url';
+
+export function getStaticPaths() {
+  return locations.map((loc) => ({
+    params: { locationSlug: loc.slug },
+    props: { location: loc },
+  }));
+}
+
+const { location } = Astro.props;
+
+const title = `Zlata ura in vreme za fotografiranje — ${location.name}`;
+const description = `Zlata ura, modra ura in sončni vzhod/zahod za ${location.name} (${location.region}), prilagojeno relief doline. Napoved za poroke, pokrajino in makro fotografijo.`;
+---
+
+<BaseLayout title={title} description={description}>
+  <p class="breadcrumbs"><a href={withBase('/')}>Fotovreme</a> / {location.name}</p>
+  <span class="badge">{location.region}</span>
+  <h1>Zlata ura in vreme za fotografiranje: {location.name}</h1>
+  <p class="lede">{location.intro}</p>
+
+  <h2>Sončni čas naslednjih dni</h2>
+  <SunTimesTable location={location} />
+
+  <h2>Vremenska napoved</h2>
+  <WeatherTable location={location} />
+
+  <h2>Korekcija za relief doline</h2>
+  <p>{location.orographyNote}</p>
+  <div class="note">
+    <strong>Metodologija:</strong> Za vsako lokacijo iz višinskih podatkov Open-Meteo (Copernicus DEM,
+    ločljivost ~90 m) izračunamo profil obzorja v 36 smereh (vsakih 10°) do 16 km daleč, nato pa za
+    vsak dan poiščemo, kdaj sonce dejansko prečka ta profil — ne le ravninski horizont. Ker je
+    ločljivost vzorčenja omejena (10° koraki, do 16 km), gre za dobro oceno, ne za centimetrsko
+    natančnost; oster, bližnji rob grebena lahko izračun rahlo podceni ali preceni.
+  </div>
+
+  <h2>Za katero vrsto fotografije je {location.name} primeren?</h2>
+  <div class="card-grid">
+    {
+      photoTypes.map((t) => (
+        <div class="card">
+          <h3>{t.shortName}</h3>
+          <p>{t.bestWindow}</p>
+          <a class="card-link" href={withBase(`/${t.slug}`)}>
+            Več o pogojih za {t.shortName.toLowerCase()} →
+          </a>
+        </div>
+      ))
+    }
+  </div>
+
+  <p style="margin-top: 2rem;">
+    <a href={withBase('/#lokacije')}>← Nazaj na vse lokacije</a>
+  </p>
+</BaseLayout>

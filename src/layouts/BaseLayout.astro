@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import { withBase } from '../lib/url';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const siteTitle = 'Fotovreme';
+const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+---
+
+<html lang="sl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a class="brand" href={withBase('/')}>
+          Fotovreme <span class="tagline">foto-vremenski planer</span>
+        </a>
+        <nav class="main-nav" aria-label="Glavna navigacija">
+          <ul>
+            <li><a href={withBase('/poroke')}>Poroke</a></li>
+            <li><a href={withBase('/pokrajina')}>Pokrajina</a></li>
+            <li><a href={withBase('/makro')}>Makro</a></li>
+            <li><a href={withBase('/#lokacije')}>Lokacije</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <slot />
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <span>&copy; {new Date().getFullYear()} Fotovreme &mdash; hiperlokalni foto-vremenski planer za Zgornjo Savinjsko dolino.</span>
+        <span>Podatki: Open-Meteo, IREICA1, astronomski izračuni.</span>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { locations } from '../lib/locations';
+import { photoTypes } from '../lib/photoTypes';
+import { withBase } from '../lib/url';
+
+const title = 'Fotovreme — foto-vremenski planer';
+const description =
+  'Kdaj je zlata ura? Vreme za poroko, pokrajino ali makro fotografijo v Zgornji Savinjski dolini — z upoštevanjem reliefa doline, ne le astronomskega izračuna.';
+---
+
+<BaseLayout title={title} description={description}>
+  <span class="badge">Beta — statični izračun</span>
+  <h1>Foto-vremenski planer za Zgornjo Savinjsko dolino</h1>
+  <p class="lede">
+    Kdaj je zlata ura na tvoji lokaciji? Fotovreme povezuje astronomske izračune zlate in modre ure
+    z vremensko napovedjo in poznavanjem mikroklime doline — nekaj, česar splošni kalkulatorji zlate
+    ure (tipa PhotoPills) ne znajo, ker ne upoštevajo, da sonce v ozki alpski dolini zaide za grebenom
+    precej prej, kot kaže ravninski izračun.
+  </p>
+
+  <div class="note">
+    <strong>Zakaj ne le astronomski izračun?</strong> V Logarski dolini, obdani s strmimi grebeni,
+    lahko sonce po naših izračunih iz digitalnega modela reliefa (DEM) izgine za grebenom tudi tri
+    ure prej, kot pravi "sončni zahod" na papirju — pozimi pa se zjutraj na dnu doline sploh ne
+    pojavi še ure po astronomskem vzhodu. Za poročne in pokrajinske fotografe je to razlika med ujeto
+    in povsem zamujeno zlato uro.
+  </div>
+
+  <h2>Vreme za fotografiranje po tipu</h2>
+  <div class="card-grid">
+    {
+      photoTypes.map((t) => (
+        <div class="card">
+          <h3>{t.shortName}</h3>
+          <p>{t.intro}</p>
+          <a class="card-link" href={withBase(`/${t.slug}`)}>
+            Preveri vreme za {t.shortName.toLowerCase()} →
+          </a>
+        </div>
+      ))
+    }
+  </div>
+
+  <h2 id="lokacije">Lokacije za fotografiranje v Zgornji Savinjski dolini</h2>
+  <p>
+    Za vsako lokacijo izračunamo zlato in modro uro ter, kjer je relevantno, korekcijo glede na
+    okoliške grebene doline.
+  </p>
+  <div class="card-grid">
+    {
+      locations.map((loc) => (
+        <div class="card">
+          <h3>{loc.name}</h3>
+          <p>{loc.intro}</p>
+          <a class="card-link" href={withBase(`/${loc.slug}`)}>
+            Zlata ura v kraju {loc.name} →
+          </a>
+        </div>
+      ))
+    }
+  </div>
+
+  <h2>Kdaj je zlata ura in kaj je modra ura?</h2>
+  <p>
+    <strong>Zlata ura</strong> je obdobje kmalu po sončnem vzhodu in tik pred sončnim zahodom, ko je
+    sonce nizko na nebu in oddaja mehko, toplo svetlobo — priljubljena za portrete, poroke in
+    pokrajinsko fotografijo. <strong>Modra ura</strong> nastopi tik pred vzhodom oz. takoj po zahodu
+    sonca, ko je nebo še vedno osvetljeno v hladnih modrih odtenkih, sonce pa že ni več nad
+    horizontom.
+  </p>
+  <p>
+    V dolinah z visokimi grebeni se dejanski, na terenu izkušen sončni zahod razlikuje od
+    astronomskega izračuna, zato Fotovreme za vsako lokacijo posebej oceni tudi ta zamik.
+  </p>
+</BaseLayout>

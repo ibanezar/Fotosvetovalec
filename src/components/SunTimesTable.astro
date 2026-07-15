@@ -1,0 +1,62 @@
+---
+import type { Location } from '../lib/locations';
+import { getPhotoSunTimes, formatTime, formatDate, upcomingDays } from '../lib/sunCalc';
+
+interface Props {
+  location: Location;
+  days?: number;
+}
+
+const { location, days = 5 } = Astro.props;
+const rows = upcomingDays(days).map((d) => getPhotoSunTimes(d, location));
+
+function diffMinutes(astro: Date, effective: Date): number {
+  return Math.round((astro.getTime() - effective.getTime()) / 60000);
+}
+---
+
+<div style="overflow-x: auto;">
+  <table class="light-table">
+    <caption>
+      Astronomski izračun, popravljen s korekcijo horizonta iz digitalnega modela reliefa (DEM) —
+      glej metodologijo spodaj. Vremenska napoved je ločena tabela pod to.
+    </caption>
+    <thead>
+      <tr>
+        <th>Dan</th>
+        <th>Sončni vzhod (v dolini)</th>
+        <th>Sončni zahod (v dolini)</th>
+        <th>Razlika od astron. zahoda</th>
+        <th>Večerna zlata ura</th>
+        <th>Modra ura (zvečer)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((t) => {
+          const setDiff = diffMinutes(t.astronomicalSunset, t.effectiveSunset);
+          return (
+            <tr>
+              <td>{formatDate(t.date)}</td>
+              <td>{formatTime(t.effectiveSunrise)}</td>
+              <td>{formatTime(t.effectiveSunset)}</td>
+              <td>{setDiff > 0 ? `−${setDiff} min` : 'brez'}</td>
+              <td>
+                {t.eveningGoldenHourBlockedByTerrain
+                  ? 'zakrito z grebenom'
+                  : `${formatTime(t.eveningGoldenHourStart)}–${formatTime(t.eveningGoldenHourEnd)}`}
+              </td>
+              <td>
+                {formatTime(t.eveningBlueHourStart)}–{formatTime(t.eveningBlueHourEnd)}
+              </td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>
+<p style="font-size: 0.85rem; color: var(--color-text-muted);">
+  "Razlika od astron. zahoda" pove, koliko prej sonce izgine za grebenom doline glede na splošni
+  (ravninski) izračun sončnega zahoda, ki ga uporabljajo večina spletnih kalkulatorjev zlate ure.
+</p>
